@@ -354,15 +354,35 @@ async function generatePDF() {
   }
 
   function collectFormData(formId) {
+    
     const form = document.getElementById(formId);
     const formData = new FormData(form);
     const formRows = [];
+  
     formData.forEach((value, key) => {
+      const inputElement = form.querySelector(`[name="${key}"]`);  // Get the input element
       const label = form.querySelector(`label[for="${key}"]`)?.innerText || key;
+  
+      // Check if the input is of type 'date'
+      if (inputElement?.type === 'date' && value) {
+        // Format the date value into DD-MM-YYYY
+        value = formatDateDDMMYYYY(value);
+      }
+  
       formRows.push([label, value]);
     });
+  
     return formRows;
   }
+  
+  function formatDateDDMMYYYY(dateString) {
+    const date = new Date(dateString);
+    const day = ('0' + date.getDate()).slice(-2);  // Two digits for day
+    const month = ('0' + (date.getMonth() + 1)).slice(-2);  // Two digits for month
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+  
 
   function collectTableData(tableSelector, skipHeader = true) {
     const table = document.querySelector(tableSelector);
@@ -383,6 +403,33 @@ async function generatePDF() {
     }
     return tableRows;
   }
+
+  function collectTableData1(tableSelector, skipHeader = true) {
+    const table = document.querySelector(tableSelector);
+    const tableRows = [];
+    
+    if (table) {
+        const rows = table.getElementsByTagName("tr");
+        for (let i = skipHeader ? 1 : 0; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName("td");
+            const rowData = [];
+            for (let j = 0; j < cells.length; j++) {
+                const input = cells[j].querySelector("input");
+                // Check for input and replace empty with a tick
+                if (input) {
+                    rowData.push(input.value.trim() === "" ? "OK" : input.value);  // Replace empty with tick
+                } else {
+                    const cellValue = cells[j].innerText.trim();
+                    rowData.push(cellValue === "" ? "OK" : cellValue);  // Replace empty with tick for text
+                }
+            }
+            tableRows.push(rowData);
+        }
+    } else {
+        console.error(`Table element "${tableSelector}" not found.`);
+    }
+    return tableRows;
+}
 
   function collectRadioData(containerSelector) {
     const container = document.querySelector(containerSelector);
@@ -418,22 +465,25 @@ async function generatePDF() {
   }
 
   try {
+    const formattedDate = formatDateDDMMYYYY(new Date());
+
     // Add cover page
-    doc.setFillColor(...primaryColor);
+    doc.setFillColor(255,255,255);
     doc.rect(0, 0, pageWidth, pageHeight, "F");
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont("Constantia", "bold"); 
     doc.setFontSize(24);
     doc.text("VCRA PRODUCT", pageWidth / 2, pageHeight / 2 - 20, { align: "center" });
     doc.text("INSPECTION REPORT", pageWidth / 2, pageHeight / 2 + 10, { align: "center" });
     doc.setFontSize(12);
-    doc.text(new Date().toLocaleDateString(), pageWidth / 2, pageHeight - 30, { align: "center" });
+    doc.text(formattedDate, pageWidth / 2, pageHeight - 30, { align: "center" });
 
 
     // Add logo
-    const logoURL = "assets/img/logo.png";
+    const logoURL = "assets/img/VCRAlog.png";
     const logoImg = await loadImage(logoURL);
-    const logoWidth = 60;
-    const logoHeight = 30;
+    const logoWidth = 100;
+    const logoHeight = 40;
     doc.addImage(
       logoImg,
       "PNG",
@@ -467,7 +517,7 @@ async function generatePDF() {
     await addImages("#imageUploadContainer", "Product Pictures");
     
     await addSection("Product Details Verification", ["Description", "Confirm", "Not Confirm", "N/A"], collectRadioData(".product-details-verification table"));
-    await addSection("Measurement Verification Sheet", ["Point of Measure", "Size", "Tolerance", "Spec", "", "", ""], collectTableData("#dynamicTable"));
+    await addSection("Measurement Verification Sheet", ["Point of Measure", "Size", "Tolerance", "Spec", "", "", ""], collectTableData1("#dynamicTable"));
     await addSection("Quality Check List On Material & Workmanship", ["Material & Workmanship Details", "Critical", "Major", "Minor"], collectTableData("#dynamicTable2"));
     await addSection("Appearance and Packing", ["Description", "Confirm", "Not Confirm", "N/A", "Comments"], collectRadioData("#form1111"));
     await addSection("Material", ["Description", "Confirm", "Not Confirm", "N/A", "Comments"], collectRadioData("#formmaterial"));
