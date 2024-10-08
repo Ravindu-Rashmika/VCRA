@@ -382,6 +382,29 @@ async function generatePDF() {
     const year = date.getFullYear();
     return `${month}-${day}-${year}`;
   }
+
+  function addSignatureSection() {
+    const signatureLineWidth = 80; // Width of the signature line
+    const lineHeight = 15;
+    
+    // Add signature lines
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0); // Black color for signature lines
+    
+    // Auditor signature
+    let signatureY = y + 30; // Adjust vertical position based on your layout
+    let signatureX = margin;
+    doc.line(signatureX, signatureY, signatureX + signatureLineWidth, signatureY); // Signature line
+    doc.setFontSize(10);
+    doc.text('Name & Signature of Auditor', signatureX, signatureY + lineHeight); // Label
+    
+    // Vendor/Representative signature
+    signatureX = pageWidth - margin - signatureLineWidth; // Align on the right
+    doc.line(signatureX, signatureY, signatureX + signatureLineWidth, signatureY); // Signature line
+    doc.text('Name & Signature of Vendor', signatureX, signatureY + lineHeight, { align: 'center' });
+    
+    y = signatureY + lineHeight + 20; // Update y position for further content if needed
+  }
   
 
   function collectTableData(tableSelector, skipHeader = true) {
@@ -429,7 +452,11 @@ async function generatePDF() {
         console.error(`Table element "${tableSelector}" not found.`);
     }
     return tableRows;
+
 }
+
+
+
 
   function collectRadioData(containerSelector) {
     const container = document.querySelector(containerSelector);
@@ -531,6 +558,41 @@ async function generatePDF() {
     const resultText = inspectionResult ? inspectionResult.parentElement.textContent.trim() : "No option selected";
     await addSection("Inspection Result", ["Inspection Result"], [[resultText]]);
 
+    
+    // Retrieve comment from textarea and add it to the PDF
+    const comments = document.getElementById('resultcomment1qq')?.value || 'No comments provided';
+    await addSection("Comments", ["Comment"], [[comments]]);
+
+
+    y += 18; 
+
+    const signatureLineWidth = 80; // Width of the signature line
+    const lineHeight = 7; // Line height for text
+    const spaceBetween = 5; // Space between the signature lines and the text
+
+    // Auditor signature on the left
+    let signatureY = y + spaceBetween; // Starting Y position for signatures
+    let auditorX = margin; // Left margin for auditor's signature
+
+    // Draw Auditor signature line and text
+    doc.setDrawColor(0); // Black color for lines
+    doc.setLineWidth(0.5);
+    doc.line(auditorX, signatureY, auditorX + signatureLineWidth, signatureY); // Auditor signature line
+    doc.setFontSize(8);
+    doc.text('Name & Signature of Auditor', auditorX, signatureY + lineHeight); // Auditor label
+
+    // Vendor/Representative signature on the right
+    let vendorX = pageWidth - margin - signatureLineWidth; // Align Vendor signature to the right
+
+    // Draw Vendor signature line
+    doc.line(vendorX, signatureY, vendorX + signatureLineWidth, signatureY); // Vendor signature line
+
+    // Draw the Vendor text below the signature line
+    doc.text('Name & Signature of Vendor', vendorX, signatureY + lineHeight); // First line of text
+
+    // Update y position for further content if needed
+    y = signatureY + lineHeight + 30; // Adjust y for next section
+
     // Save the PDF
     doc.save("VCRA-Product-Inspection-Report.pdf");
   } catch (error) {
@@ -555,3 +617,4 @@ document.addEventListener("DOMContentLoaded", function () {
     handleFileSelect(event, photo1);
   });
 });
+
