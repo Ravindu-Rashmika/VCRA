@@ -293,8 +293,10 @@ async function generatePDF() {
     const images = container.querySelectorAll('img');
     const comments = container.querySelectorAll('textarea');
     
-    const maxWidth = (pageWidth - 5 * margin) / 2; // Width for each image (2 per row)
+    const maxWidth = (pageWidth - 1 * margin) / 2; // Width for each image (2 per row)
     const maxHeight = 80; // Maximum height for images
+    
+
     
     for (let i = 0; i < images.length; i += 2) {
       if (checkPageBreak(maxHeight + 40)) {
@@ -443,7 +445,7 @@ async function generatePDF() {
                     rowData.push(input.value.trim() === "" ? "OK" : input.value);  // Replace empty with tick
                 } else {
                     const cellValue = cells[j].innerText.trim();
-                    rowData.push(cellValue === "" ? "OK" : cellValue);  // Replace empty with tick for text
+                    rowData.push(cellValue === "" ? "" : cellValue);  // Replace empty with tick for text
                 }
             }
             tableRows.push(rowData);
